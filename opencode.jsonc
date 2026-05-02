@@ -103,7 +103,7 @@
   "agent": {
     "build": {
       "description": "Primary implementation agent for coding work.",
-      "model": "opencode-go/opencode-go/kimi-k2.6",
+      "model": "opencode-go/kimi-k2.6",
       "reasoningEffort": "xhigh",
       "textVerbosity": "medium",
       "permission": {
@@ -128,7 +128,7 @@
 
     "plan": {
       "description": "Primary planning and analysis agent. Must produce a concrete plan before non-trivial implementation.",
-      "model": "opencode-go/opencode-go/kimi-k2.6",
+      "model": "opencode-go/kimi-k2.6",
       "reasoningEffort": "xhigh",
       "textVerbosity": "medium",
       "permission": {
@@ -256,13 +256,13 @@
           "tail *": "allow",
           "grep *": "allow",
           "rg *": "allow",
-          "git *": "allow"
+          "git *": "allow",
         },
         "task": {
           "explore": "allow",
-          "api-docs-researcher": "allow"
-        }
-      }
+          "api-docs-researcher": "allow",
+        },
+      },
     },
 
     "code-executor": {
