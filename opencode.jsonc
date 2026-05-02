@@ -1,0 +1,353 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["@mohak34/opencode-notifier@latest"],
+  // Local plugins in ~/.config/opencode/plugins/ load automatically (e.g. plan-post-approval.ts).
+
+  "provider": {
+    "opencode": {},
+    "deepseek": {
+      "models": {
+        "deepseek-v4-pro": {
+          "interleaved": {
+            "field": "reasoning_content",
+          },
+        },
+      },
+    },
+  },
+
+  "default_agent": "orchestrator",
+  "share": "manual",
+  "autoupdate": true,
+
+  "permission": {
+    "edit": "allow",
+    "external_directory": "ask",
+    "doom_loop": "ask",
+    "bash": {
+      "*": "ask",
+
+      // Safe git defaults
+      "git *": "allow",
+      "git commit *": "ask",
+      "git rebase *": "ask",
+      "git reset *": "ask",
+      "git clean *": "ask",
+      "git push *": "deny",
+
+      // Read-only inspection
+      "pwd": "allow",
+      "ls *": "allow",
+      "find *": "allow",
+      "cat *": "allow",
+      "head *": "allow",
+      "tail *": "allow",
+      "sed *": "allow",
+      "awk *": "allow",
+      "grep *": "allow",
+      "rg *": "allow",
+
+      // Common verification commands
+      "pytest": "allow",
+      "pytest *": "allow",
+      "ruff": "allow",
+      "ruff *": "allow",
+      "mypy": "allow",
+      "mypy *": "allow",
+
+      "npm test": "allow",
+      "npm test *": "allow",
+      "npm run test": "allow",
+      "npm run test *": "allow",
+      "npm run lint": "allow",
+      "npm run lint *": "allow",
+      "npm run build": "allow",
+      "npm run build *": "allow",
+
+      "pnpm test": "allow",
+      "pnpm test *": "allow",
+      "pnpm lint": "allow",
+      "pnpm lint *": "allow",
+      "pnpm build": "allow",
+      "pnpm build *": "allow",
+
+      "yarn test": "allow",
+      "yarn test *": "allow",
+      "yarn lint": "allow",
+      "yarn lint *": "allow",
+      "yarn build": "allow",
+      "yarn build *": "allow",
+
+      "bun test": "allow",
+      "bun test *": "allow",
+      "bun run lint": "allow",
+      "bun run lint *": "allow",
+      "bun run build": "allow",
+      "bun run build *": "allow",
+
+      "cargo test": "allow",
+      "cargo test *": "allow",
+      "cargo check": "allow",
+      "cargo check *": "allow",
+
+      "go test": "allow",
+      "go test *": "allow",
+
+      // Potentially destructive commands: always ask
+      "rm *": "ask",
+      "mv *": "ask",
+      "cp *": "ask",
+    },
+  },
+
+  "agent": {
+    "build": {
+      "description": "Primary implementation agent for coding work.",
+      "model": "opencode-go/opencode-go/kimi-k2.6",
+      "reasoningEffort": "xhigh",
+      "textVerbosity": "medium",
+      "permission": {
+        "task": {
+          "general": "allow",
+          "explore": "allow",
+          "spec-critic": "allow",
+          "api-docs-researcher": "allow",
+          "test-verifier": "allow",
+          "code-reviewer": "allow",
+          "security-reviewer": "allow",
+          "docs-reviewer": "allow",
+          "host-security-investigator": "allow",
+        },
+        "skill": {
+          "gitnexus-*": "allow",
+          "security-investigation": "allow",
+          "pythonic-quality": "allow",
+        },
+      },
+    },
+
+    "plan": {
+      "description": "Primary planning and analysis agent. Must produce a concrete plan before non-trivial implementation.",
+      "model": "opencode-go/opencode-go/kimi-k2.6",
+      "reasoningEffort": "xhigh",
+      "textVerbosity": "medium",
+      "permission": {
+        "question": "allow",
+        "todowrite": "deny",
+        "edit": {
+          "*": "deny",
+          ".opencode/plans/**": "allow",
+        },
+        "bash": {
+          "*": "ask",
+          "git *": "allow",
+          "pwd": "allow",
+          "ls *": "allow",
+          "find *": "allow",
+          "cat *": "allow",
+          "grep *": "allow",
+          "rg *": "allow",
+        },
+        "task": {
+          "explore": "allow",
+          "spec-critic": "allow",
+          "api-docs-researcher": "allow",
+          "host-security-investigator": "allow",
+        },
+        "skill": {
+          "gitnexus-*": "allow",
+          "security-investigation": "allow",
+          "pythonic-quality": "allow",
+        },
+      },
+    },
+
+    "orchestrator": {
+      "description": "Coordinates phased work via Task — plan-runner for plan files, code-executor for implementation slices, reviewers at the end — without implementing code directly.",
+      // Read by plugins/plan-post-approval.ts (`session.prompt` target after Approve). Omit or empty → "build".
+      "plan_post_approval_handoff_agent": "orchestrator",
+      "model": "opencode-go/kimi-k2.6",
+      "reasoningEffort": "xhigh",
+      "textVerbosity": "medium",
+      "temperature": 0.2,
+      "permission": {
+        "question": "allow",
+        "todowrite": "allow",
+        "edit": "deny",
+        "bash": "deny",
+        "external_directory": "ask",
+        "task": {
+          "plan-runner": "allow",
+          "code-executor": "allow",
+          "code-explorer": "allow",
+          "explore": "allow",
+          "spec-critic": "allow",
+          "api-docs-researcher": "allow",
+          "test-verifier": "allow",
+          "code-reviewer": "allow",
+          "docs-reviewer": "allow",
+          "security-reviewer": "allow",
+          "host-security-investigator": "allow",
+        },
+        "skill": {
+          "gitnexus-*": "allow",
+          "security-investigation": "allow",
+          "pythonic-quality": "allow",
+        },
+      },
+    },
+
+    "plan-runner": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Subagent that drafts evidence-based implementation plans under .opencode/plans/ and returns structured output to the orchestrator parent; does not emit PlanApprove gates.",
+      "model": "opencode-go/kimi-k2.6",
+      "reasoningEffort": "xhigh",
+      "textVerbosity": "medium",
+      "temperature": 0.2,
+      "permission": {
+        "question": "deny",
+        "todowrite": "deny",
+        "edit": {
+          "*": "deny",
+          ".opencode/plans/**": "allow",
+        },
+        "bash": {
+          "*": "ask",
+          "git *": "allow",
+          "pwd": "allow",
+          "ls *": "allow",
+          "find *": "allow",
+          "cat *": "allow",
+          "grep *": "allow",
+          "rg *": "allow",
+        },
+        "task": {
+          "explore": "allow",
+          "spec-critic": "allow",
+          "api-docs-researcher": "allow",
+          "host-security-investigator": "allow",
+        },
+        "skill": {
+          "gitnexus-*": "allow",
+          "security-investigation": "allow",
+          "pythonic-quality": "allow",
+        },
+      },
+    },
+
+    "code-explorer": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Read-only codebase explorer — reads files, traverses directories, maps architecture, locates symbols, and reports findings without making edits.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+      "temperature": 0.2,
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "*": "deny",
+          "pwd": "allow",
+          "ls *": "allow",
+          "find *": "allow",
+          "cat *": "allow",
+          "head *": "allow",
+          "tail *": "allow",
+          "grep *": "allow",
+          "rg *": "allow",
+          "git *": "allow"
+        },
+        "task": {
+          "explore": "allow",
+          "api-docs-researcher": "allow"
+        }
+      }
+    },
+
+    "code-executor": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Implements one scoped coding task with edits and shell commands; may delegate explore, docs research, or test verification via Task; does not perform final repo-wide code or docs reviews.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+      "permission": {
+        "task": {
+          "*": "deny",
+          "explore": "allow",
+          "api-docs-researcher": "allow",
+          "test-verifier": "allow",
+        },
+        "skill": {
+          "gitnexus-*": "allow",
+          "security-investigation": "allow",
+          "pythonic-quality": "allow",
+        },
+      },
+    },
+
+    "test-verifier": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Run focused verification after code changes. Check tests, lint, typecheck, build output, and whether acceptance criteria were actually met.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+    },
+
+    "spec-critic": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Critique implementation plans before coding. Find missing requirements, hidden coupling, edge cases, rollback risks, and weak acceptance criteria.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+    },
+
+    "security-reviewer": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Review code and diffs for security risks involving auth, authorization, secrets, input validation, file handling, shelling out, network access, and tenant boundaries.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+    },
+
+    "docs-reviewer": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Check whether a code change requires documentation updates in README, setup steps, env vars, config docs, examples, CLI docs, or public API docs.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+    },
+
+    "code-reviewer": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Review a diff for correctness, maintainability, simplicity, repository fit, and regression risk without making edits.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+    },
+
+    "api-docs-researcher": {
+      "mode": "subagent",
+      "hidden": false,
+      "description": "Research current official documentation for SDKs, frameworks, APIs, migrations, rate limits, auth flows, and version-specific behavior before implementation.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+    },
+
+    "host-security-investigator": {
+      "mode": "subagent",
+      "hidden": true,
+      "description": "Read-only investigation of hosting and service security posture: network exposure, TLS, authentication, exposed services, containers, relevant logs, and infrastructure-as-code in the workspace. Remote SSH, scp, rsync, and sftp require user approval for each invocation.",
+      "model": "opencode-go/deepseek-v4-flash",
+      "reasoningEffort": "high",
+      "textVerbosity": "medium",
+    },
+  },
+}
