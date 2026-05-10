@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": ["node"]
   },
   "include": [
-    "skills/**/*.ts"
+    "skills/**/*.ts",
+    "plugins/**/*.ts"
   ],
   "exclude": [
     "node_modules"

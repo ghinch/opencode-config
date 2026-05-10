@@ -1,10 +1,11 @@
 {
   "dependencies": {
-    "@opencode-ai/plugin": "1.4.7"
+    "@opencode-ai/plugin": "1.4.7",
+    "eslint": "^10.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   }
 }
