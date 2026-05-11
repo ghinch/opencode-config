@@ -92,11 +92,12 @@ Allowed cross-delegations via **Task** (narrow prompts):
 
 - **`explore`**: localize symbols / patterns safely read-only
 - **`api-docs-researcher`**: official SDK/API nuances
-- **`test-verifier`**: bounded checks when commands are scoped (never claim success without factual output excerpts)
+- **`test-verifier`**: run final verification commands **after all code and tests are already written** — scoped to executing existing suites, not authoring new tests. Never delegate test *writing* here; you write tests yourself as part of TDD.
 
 Forbidden **during this delegation**:
 
 - Repo-wide **`code-reviewer`** / **`docs-reviewer`** / **`security-reviewer`** phases — orchestrator schedules those after slices converge.
+- Delegating **test authoring** to `test-verifier` or any other agent. You write all tests yourself inline — `test-verifier` only runs them.
 
 Forbidden tools / patterns:
 
