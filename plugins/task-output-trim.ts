@@ -323,11 +323,4 @@ const TaskOutputTrimPlugin: Plugin = async ({ client, directory }) => {
   };
 };
 
-// Exported for testing
-export type { TrimConfig };
-export { loadTrimConfig };
-export function clearTrimConfigCache(): void {
-  cachedTrimConfig = null;
-}
-
 export default TaskOutputTrimPlugin;

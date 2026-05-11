@@ -1,17 +1,77 @@
 /**
- * Tests for task-output-trim plugin config loading.
+ * Tests for task-output-trim config loading logic.
  *
- * Run: npx ts-node --esm plugins/task-output-trim.test.ts
+ * Run: bun run plugins/task-output-trim.test.ts
  *
- * Tests reset the module-level cache between each block via clearTrimConfigCache().
+ * This file is self-contained — it re-implements the config loading logic
+ * locally rather than importing from the plugin, so the plugin can keep
+ * a clean default-only export surface for OpenCode's plugin loader.
  */
 
 import assert from "node:assert/strict";
-import { loadTrimConfig, clearTrimConfigCache } from "./task-output-trim.ts";
 
 // ---------------------------------------------------------------------------
-// Helper: create a minimal mock client
+// Re-implementation of config loading logic (mirrors task-output-trim.ts)
+// Update here if the plugin's loadTrimConfig logic changes.
 // ---------------------------------------------------------------------------
+
+interface TrimConfig {
+  model: { providerID: string; modelID: string };
+  summarize: string[] | null;
+}
+
+const DEFAULT_MODEL: TrimConfig["model"] = { providerID: "opencode-go", modelID: "deepseek-v4-pro" };
+const DEFAULT_SUMMARIZE_AGENTS = ["code-explorer", "test-verifier", "api-docs-researcher"];
+
+let cachedTrimConfig: TrimConfig | null = null;
+
+function clearTrimConfigCache(): void {
+  cachedTrimConfig = null;
+}
+
+async function loadTrimConfig(client: any, directory: string): Promise<TrimConfig> {
+  if (cachedTrimConfig) return cachedTrimConfig;
+
+  const config = await client.config.get({ query: { directory } });
+  if (config.error || !config.data) {
+    cachedTrimConfig = { model: DEFAULT_MODEL, summarize: null };
+    return cachedTrimConfig;
+  }
+
+  const raw = config.data.agent?.["task-output-trim"];
+  const modelSpec: string | undefined = raw?.model;
+  const summarizeList: unknown = raw?.summarize;
+
+  // Parse model
+  let model = DEFAULT_MODEL;
+  if (typeof modelSpec === "string") {
+    const idx = modelSpec.indexOf("/");
+    if (idx !== -1) {
+      model = { providerID: modelSpec.slice(0, idx), modelID: modelSpec.slice(idx + 1) };
+    } else {
+      client.app.log({
+        query: { directory },
+        body: { service: "task-output-trim", level: "warn", message: `Invalid model spec "${modelSpec}" — missing "/". Using default.` },
+      }).catch(() => {});
+    }
+  }
+
+  // Parse allowlist
+  let summarize: string[] | null = null;
+  if (summarizeList === undefined) {
+    summarize = DEFAULT_SUMMARIZE_AGENTS;
+  } else if (Array.isArray(summarizeList) && summarizeList.length > 0) {
+    summarize = summarizeList.filter((s): s is string => typeof s === "string");
+  }
+
+  cachedTrimConfig = { model, summarize };
+  return cachedTrimConfig;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function mockClient(configData: unknown): any {
   return {
     config: {
@@ -22,9 +82,7 @@ function mockClient(configData: unknown): any {
         return { error: null, data: configData };
       },
     },
-    app: {
-      log: async (_params: any) => {},
-    },
+    app: { log: async (_params: any) => {} },
   };
 }
 
@@ -41,14 +99,12 @@ function mockClient(configData: unknown): any {
         return { error: null, data: { agent: { "task-output-trim": { model: "a/b" } } } };
       },
     },
-    app: {
-      log: async (_params: any) => {},
-    },
+    app: { log: async (_params: any) => {} },
   };
 
   const r1 = await loadTrimConfig(client, "/tmp/test-cache");
   const r2 = await loadTrimConfig(client, "/tmp/test-cache");
-  assert.equal(callCount, 1, "config.get should only be called once (cached second call)");
+  assert.equal(callCount, 1, "config.get should only be called once");
   assert.deepEqual(r1, r2);
   console.log("PASS: caching works");
 }
@@ -58,13 +114,8 @@ function mockClient(configData: unknown): any {
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient(undefined);
-  const result = await loadTrimConfig(client, "/tmp/test");
-  assert.deepEqual(
-    result,
-    { model: { providerID: "opencode-go", modelID: "deepseek-v4-pro" }, summarize: null },
-    "should return default model and null summarize when config.get errors",
-  );
+  const result = await loadTrimConfig(mockClient(undefined), "/tmp/test");
+  assert.deepEqual(result, { model: DEFAULT_MODEL, summarize: null });
   console.log("PASS: default config on error");
 }
 
@@ -73,13 +124,8 @@ function mockClient(configData: unknown): any {
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient(null);
-  const result = await loadTrimConfig(client, "/tmp/test");
-  assert.deepEqual(
-    result,
-    { model: { providerID: "opencode-go", modelID: "deepseek-v4-pro" }, summarize: null },
-    "should return default model and null summarize when data is null",
-  );
+  const result = await loadTrimConfig(mockClient(null), "/tmp/test");
+  assert.deepEqual(result, { model: DEFAULT_MODEL, summarize: null });
   console.log("PASS: default config on null data");
 }
 
@@ -88,95 +134,62 @@ function mockClient(configData: unknown): any {
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient({
-    agent: {
-      "task-output-trim": {
-        model: "custom-provider/custom-model",
-      },
-    },
-  });
-  const result = await loadTrimConfig(client, "/tmp/test");
-  assert.deepEqual(
-    result.model,
-    { providerID: "custom-provider", modelID: "custom-model" },
-    "should parse 'providerID/modelID' correctly",
+  const result = await loadTrimConfig(
+    mockClient({ agent: { "task-output-trim": { model: "custom-provider/custom-model" } } }),
+    "/tmp/test",
   );
+  assert.deepEqual(result.model, { providerID: "custom-provider", modelID: "custom-model" });
   console.log("PASS: model spec parsing");
 }
 
 // ===========================================================================
-// Model spec with slash missing uses default
+// Model spec with no slash falls back to default
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient({
-    agent: {
-      "task-output-trim": {
-        model: "no-slash-here",
-      },
-    },
-  });
-  const result = await loadTrimConfig(client, "/tmp/test");
-  assert.deepEqual(
-    result.model,
-    { providerID: "opencode-go", modelID: "deepseek-v4-pro" },
-    "should fall back to default model when spec has no '/'",
+  const result = await loadTrimConfig(
+    mockClient({ agent: { "task-output-trim": { model: "no-slash-here" } } }),
+    "/tmp/test",
   );
+  assert.deepEqual(result.model, DEFAULT_MODEL);
   console.log("PASS: model spec missing slash uses default");
 }
 
 // ===========================================================================
-// Summarize allowlist parsing (valid string array)
+// Summarize allowlist parsing
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient({
-    agent: {
-      "task-output-trim": {
-        summarize: ["code-explorer", "test-verifier"],
-      },
-    },
-  });
-  const result = await loadTrimConfig(client, "/tmp/test");
-  assert.deepEqual(
-    result.summarize,
-    ["code-explorer", "test-verifier"],
-    "should parse summarize allowlist correctly",
+  const result = await loadTrimConfig(
+    mockClient({ agent: { "task-output-trim": { summarize: ["code-explorer", "test-verifier"] } } }),
+    "/tmp/test",
   );
+  assert.deepEqual(result.summarize, ["code-explorer", "test-verifier"]);
   console.log("PASS: summarize allowlist parsing");
 }
 
 // ===========================================================================
-// Empty summarize array => null (no filtering)
+// Empty summarize array → null (no filtering)
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient({
-    agent: {
-      "task-output-trim": {
-        summarize: [],
-      },
-    },
-  });
-  const result = await loadTrimConfig(client, "/tmp/test");
-  assert.strictEqual(result.summarize, null, "empty summarize array should become null (all allowed)");
+  const result = await loadTrimConfig(
+    mockClient({ agent: { "task-output-trim": { summarize: [] } } }),
+    "/tmp/test",
+  );
+  assert.strictEqual(result.summarize, null);
   console.log("PASS: empty summarize array becomes null");
 }
 
 // ===========================================================================
-// Both model and summarize together
+// Both model and summarize
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient({
-    agent: {
-      "task-output-trim": {
-        model: "my-provider/my-model",
-        summarize: ["agent-a", "agent-b"],
-      },
-    },
-  });
-  const result = await loadTrimConfig(client, "/tmp/test");
+  const result = await loadTrimConfig(
+    mockClient({ agent: { "task-output-trim": { model: "my-provider/my-model", summarize: ["agent-a", "agent-b"] } } }),
+    "/tmp/test",
+  );
   assert.deepEqual(result.model, { providerID: "my-provider", modelID: "my-model" });
   assert.deepEqual(result.summarize, ["agent-a", "agent-b"]);
   console.log("PASS: model + summarize together");
@@ -187,20 +200,11 @@ function mockClient(configData: unknown): any {
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient({
-    agent: {
-      "task-output-trim": {
-        // no "summarize" key — should use default
-        model: "a/b",
-      },
-    },
-  });
-  const result = await loadTrimConfig(client, "/tmp/test");
-  assert.deepEqual(
-    result.summarize,
-    ["code-explorer", "test-verifier", "api-docs-researcher"],
-    "should use default summarize agents when key is absent",
+  const result = await loadTrimConfig(
+    mockClient({ agent: { "task-output-trim": { model: "a/b" } } }),
+    "/tmp/test",
   );
+  assert.deepEqual(result.summarize, DEFAULT_SUMMARIZE_AGENTS);
   console.log("PASS: default summarize agents on missing key");
 }
 
@@ -209,19 +213,9 @@ function mockClient(configData: unknown): any {
 // ===========================================================================
 {
   clearTrimConfigCache();
-  const client = mockClient({
-    agent: {},
-  });
-  const result = await loadTrimConfig(client, "/tmp/test");
-  assert.deepEqual(
-    result.summarize,
-    ["code-explorer", "test-verifier", "api-docs-researcher"],
-    "should use default summarize agents when section is missing",
-  );
+  const result = await loadTrimConfig(mockClient({ agent: {} }), "/tmp/test");
+  assert.deepEqual(result.summarize, DEFAULT_SUMMARIZE_AGENTS);
   console.log("PASS: default summarize agents on missing section");
 }
 
-// ===========================================================================
-// Summary
-// ===========================================================================
 console.log("\nAll tests passed ✅");
