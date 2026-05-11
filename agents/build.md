@@ -7,12 +7,8 @@ permission:
   doom_loop: ask
   bash:
     "*": ask
-    "git *": allow
+    "git add *": allow
     "git commit *": allow
-    "git rebase *": ask
-    "git reset *": ask
-    "git clean *": ask
-    "git push *": deny
     "pwd": allow
     "ls *": allow
     "find *": allow
