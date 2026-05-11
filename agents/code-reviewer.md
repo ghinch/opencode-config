@@ -4,8 +4,8 @@ mode: subagent
 hidden: true
 temperature: 0.1
 permission:
-  external_directory: ask
-  doom_loop: ask
+  external_directory: deny
+  doom_loop: deny
   edit: deny
   bash:
     "*": deny

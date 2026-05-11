@@ -9,15 +9,15 @@ permission:
   edit:
     "*": deny
     ".opencode/plans/**": allow
-  external_directory: ask
-  doom_loop: ask
+  external_directory: deny
+  doom_loop: deny
   bash:
-    "*": ask
+    "*": deny
     "git *": allow
-    "git commit *": ask
-    "git rebase *": ask
-    "git reset *": ask
-    "git clean *": ask
+    "git commit *": deny
+    "git rebase *": deny
+    "git reset *": deny
+    "git clean *": deny
     "git push *": deny
     "pwd": allow
     "ls *": allow
@@ -67,9 +67,9 @@ permission:
     "cargo check *": allow
     "go test": allow
     "go test *": allow
-    "rm *": ask
-    "mv *": ask
-    "cp *": ask
+    "rm *": deny
+    "mv *": deny
+    "cp *": deny
   task:
     explore: allow
     spec-critic: allow

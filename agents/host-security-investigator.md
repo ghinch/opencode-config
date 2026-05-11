@@ -1,5 +1,5 @@
 ---
-description: "Read-only investigation of hosting and service security posture: network exposure, TLS, authentication, exposed services, containers, relevant logs, and infrastructure-as-code in the workspace. Remote SSH, scp, rsync, and sftp require user approval for each invocation."
+description: "Read-only investigation of hosting and service security posture: network exposure, TLS, authentication, exposed services, containers, relevant logs, and infrastructure-as-code in the workspace. Remote SSH, scp, rsync, and sftp are not permitted; the agent will instruct the user to run those commands manually."
 mode: subagent
 hidden: true
 temperature: 0.1
@@ -11,8 +11,8 @@ permission:
   edit: deny
   todowrite: deny
   task: deny
-  external_directory: ask
-  doom_loop: ask
+  external_directory: deny
+  doom_loop: deny
   webfetch: allow
   websearch: allow
   bash:
@@ -85,13 +85,13 @@ permission:
     "nslookup *": allow
     "resolvectl *": allow
 
-    "curl *": ask
-    "wget *": ask
+    "curl *": allow
+    "wget *": allow
 
-    "ssh *": ask
-    "scp *": ask
-    "rsync *": ask
-    "sftp *": ask
+    "ssh *": deny
+    "scp *": deny
+    "rsync *": deny
+    "sftp *": deny
 ---
 
 You are a hosting and infrastructure security investigator.
@@ -104,11 +104,7 @@ Adapt depth to the prompt: exposed ports and listeners, TLS configuration and ce
 
 ## Remote access
 
-When investigation requires a remote host, use **non-interactive** SSH with explicit read-only remote commands, for example:
-
-`ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new user@host 'command'`
-
-SSH, scp, rsync, and sftp invocations require **user approval** in this agent’s permission model. Prefer the smallest read-only command set. If a needed diagnostic is not allowed by permissions, say what command you would run and ask the user to run it or approve.
+When investigation requires a remote host, SSH, scp, rsync, and sftp are **not permitted** by this agent's permissions. Describe the exact command you would run (e.g. `ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new user@host 'command'`) and ask the user to execute it and share the output.
 
 ## Evidence
 

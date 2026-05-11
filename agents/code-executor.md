@@ -4,15 +4,15 @@ mode: subagent
 hidden: true
 permission:
   edit: allow
-  external_directory: ask
-  doom_loop: ask
+  external_directory: deny
+  doom_loop: deny
   bash:
-    "*": ask
+    "*": deny
     "git *": allow
     "git commit *": allow
-    "git rebase *": ask
-    "git reset *": ask
-    "git clean *": ask
+    "git rebase *": deny
+    "git reset *": allow
+    "git clean *": allow
     "git push *": deny
     "pwd": allow
     "ls *": allow
@@ -72,9 +72,12 @@ permission:
     "cargo check *": allow
     "go test": allow
     "go test *": allow
-    "rm *": ask
-    "mv *": ask
-    "cp *": ask
+    "rm *": allow
+    "mv *": allow
+    "cp *": allow
+  task:
+    api-docs-researcher: allow
+    test-verifier: allow
   skill:
     "gitnexus-*": allow
     security-investigation: allow
@@ -96,12 +99,12 @@ Fulfill exactly the delegated slice:
 - Make **minimal reversible diffs**; match existing style.
 - **TDD (test-driven development) is mandatory for all implementation work.** Write the test first, watch it fail, write minimal code to pass, refactor afterward. No production code without a failing test first. Load `skill: test-driven-development` for the full workflow.
 - Read files directly using your file tools (Read, Glob, Grep) when you need full contents or precise signatures. Do not assume the slice prompt contains everything.
-- Run verification commands (tests, lint, typecheck) directly via bash. Do not delegate to subagents.
+- Run verification commands (tests, lint, typecheck) directly via bash. Optionally delegate a broader verification pass to `test-verifier` after implementation is complete.
 - Produce clear evidence (command output references) proving slice acceptance criteria.
 
 Forbidden **during this delegation**:
 
-- **No Task delegation** — you have no subagent permissions. Run tests, read files, and check types yourself using your bash and file tools.
+- **No broad Task delegation** — you may only delegate via **Task** to `api-docs-researcher` (for external SDK/API facts you cannot resolve from local files) and `test-verifier` (for a broader post-implementation verification pass). All other subagents are denied. Read files and run verification commands yourself using your bash and file tools.
 - Repo-wide **`code-reviewer`** / **`docs-reviewer`** / **`security-reviewer`** phases — orchestrator schedules those after slices converge.
 - **Treating code supplied in the delegating prompt as the implementation.** The orchestrator passes requirements and acceptance criteria only. Any code snippets in the prompt are illustrative context at most — you write all production code and tests yourself from scratch.
 
