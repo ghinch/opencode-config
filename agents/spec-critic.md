@@ -2,7 +2,6 @@
 description: Critique implementation plans before coding. Find missing requirements, hidden coupling, edge cases, rollback risks, and weak acceptance criteria.
 mode: subagent
 hidden: true
-model: opencode-go/deepseek-v4-flash
 temperature: 0.4
 permission:
   external_directory: ask

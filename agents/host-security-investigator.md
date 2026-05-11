@@ -2,7 +2,6 @@
 description: "Read-only investigation of hosting and service security posture: network exposure, TLS, authentication, exposed services, containers, relevant logs, and infrastructure-as-code in the workspace. Remote SSH, scp, rsync, and sftp require user approval for each invocation."
 mode: subagent
 hidden: true
-model: opencode-go/deepseek-v4-flash
 temperature: 0.1
 permission:
   read: allow

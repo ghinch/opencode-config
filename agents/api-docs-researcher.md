@@ -2,7 +2,6 @@
 description: Research current official documentation for SDKs, frameworks, APIs, migrations, rate limits, auth flows, and version-specific behavior before implementation.
 mode: subagent
 hidden: false
-model: opencode-go/deepseek-v4-flash
 temperature: 0.1
 permission:
   external_directory: ask

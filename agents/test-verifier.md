@@ -2,7 +2,6 @@
 description: Run focused verification after code changes. Check tests, lint, typecheck, build output, and whether acceptance criteria were actually met.
 mode: subagent
 hidden: true
-model: opencode-go/deepseek-v4-flash
 temperature: 0.1
 permission:
   external_directory: ask

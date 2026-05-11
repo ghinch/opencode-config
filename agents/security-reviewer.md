@@ -2,7 +2,6 @@
 description: Review code and diffs for security risks involving auth, authorization, secrets, input validation, file handling, shelling out, network access, and tenant boundaries.
 mode: subagent
 hidden: true
-model: opencode-go/deepseek-v4-flash
 temperature: 0.1
 permission:
   external_directory: ask

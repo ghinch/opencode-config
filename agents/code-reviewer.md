@@ -2,7 +2,6 @@
 description: Review a diff for correctness, maintainability, simplicity, repository fit, and regression risk without making edits.
 mode: subagent
 hidden: true
-model: opencode-go/deepseek-v4-flash
 temperature: 0.1
 permission:
   external_directory: ask

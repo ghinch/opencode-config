@@ -2,7 +2,6 @@
 description: Implements one scoped coding task with edits and shell commands; may delegate explore, docs research, or test verification via Task; does not perform final repo-wide code or docs reviews.
 mode: subagent
 hidden: true
-model: opencode-go/deepseek-v4-flash
 permission:
   edit: allow
   external_directory: ask
