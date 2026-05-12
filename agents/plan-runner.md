@@ -52,6 +52,8 @@ Never implement production code; never mutate files outside `.opencode/plans/`.
 
    - **Context & goals** — what problem is being solved and why
    - **Implementation waves** — tasks grouped by dependency order (wave 1 = no dependencies; wave N = all dependencies from earlier waves complete). List each task with: name, responsible agent, estimated effort (small/medium/large), dependencies.
+
+     Valid agents to assign to tasks: `code-executor` (feature/bug implementation), `refactorer` (dedicated cleanup/simplification — dead code removal, complexity reduction, deduplication), `code-explorer` (investigation-only slice), `api-docs-researcher` (external API research slice), `test-verifier` (verification-only slice), `spec-critic` (critique slice), `security-reviewer` (security audit slice). Assign `refactorer` to any slice whose primary goal is improving existing code without changing behavior — do not assign `code-executor` to pure-refactoring work.
    - **Contracts between tasks** — for tasks that hand off to downstream tasks, describe the interface or output they must deliver (e.g., "Task A must export `AuthToken` type before Task B can consume it")
    - **Risks & rollback** — what could go wrong, how to detect it, how to roll back
    - **Pre-mortem** (required for medium/complex plans) — identify the top 2–4 most likely failure modes *before* execution. For each: scenario, likelihood (low/medium/high), impact, mitigation. This is written assuming the plan has already failed — work backwards to what went wrong.

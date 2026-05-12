@@ -39,14 +39,29 @@ The orchestrator will send you a prompt with these sections:
 [Summary of: which TODOs are done, which are in progress, which are pending, any issues or blockers]
 
 ## Available Agents
-- code-explorer: read-only codebase exploration — finds files, maps architecture, locates symbols
-- code-executor: writes code, runs tests, makes edits. Receives scope + acceptance criteria. Must use TDD.
-- test-verifier: runs verification commands (tests, lint, typecheck)
-- api-docs-researcher: researches external SDK/API behavior
-- security-reviewer: reviews diffs for security risks
-- code-reviewer: reviews cumulative diffs for correctness
-- docs-reviewer: checks if docs need updates
-- spec-critic: critiques plans before implementation
+[List of agents with one-line descriptions — passed by the orchestrator each loop]
+
+## Instructions
+Decide the single next action. What agent should the orchestrator dispatch, with what parameters?
+```
+## Approved Plan
+[Full text of the plan file from .opencode/plans/]
+
+## Current State
+[Summary of: which TODOs are done, which are in progress, which are pending, any issues or blockers]
+
+## Available Agents
+
+- `code-explorer` — read-only codebase exploration — finds files, maps architecture, locates symbols
+- `code-executor` — writes code, runs tests, makes edits. Receives scope + acceptance criteria. Must use TDD.
+- `test-verifier` — runs verification commands (tests, lint, typecheck)
+- `api-docs-researcher` — researches external SDK/API behavior
+- `security-reviewer` — reviews diffs for security risks
+- `code-reviewer` — reviews cumulative diffs for correctness
+- `docs-reviewer` — checks if docs need updates
+- `spec-critic` — critiques plans, code, or architecture
+- `debugger` — Four-Phase root-cause analysis of a failure. Read-only. Never implements fixes. Use when a `code-executor` or `test-verifier` slice has failed twice without a clear root cause.
+- `refactorer` — removes dead code, reduces complexity, consolidates duplicates. Behavior-preservation guaranteed. Use for dedicated refactoring slices in the plan — do NOT use `code-executor` for pure refactoring work.
 
 ## Instructions
 Decide the single next action. What agent should the orchestrator dispatch, with what parameters?
@@ -81,6 +96,8 @@ If no more actions are needed (all slices complete, all reviews passed), return:
 5. **API research before implementation.** If a slice touches an external SDK or protocol, recommend `api-docs-researcher` before `code-executor`.
 6. **Review after implementation stabilizes.** After all implementation slices converge, recommend `code-reviewer` then `docs-reviewer` before signing off.
 7. **Spec-critic before plan approval.** If the plan seems ambiguous or incomplete, the orchestrator should have already run `spec-critic` — but you can flag concerns.
+8. **Diagnose before retrying.** If a `code-executor` or `test-verifier` result shows a failure that also appeared in the previous loop, dispatch `debugger` before another `code-executor` attempt. Never recommend a third blind fix attempt — diagnose first.
+9. **Refactoring slices go to `refactorer`, not `code-executor`.** If the plan contains a dedicated cleanup or refactoring step (dead code removal, complexity reduction, deduplication), always dispatch `refactorer`. It enforces behavior-preservation and Chesterton's Fence discipline that `code-executor` does not.
 
 ## Constraints
 

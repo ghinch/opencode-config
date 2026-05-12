@@ -24,6 +24,8 @@ permission:
     code-reviewer: allow
     docs-reviewer: allow
     security-reviewer: allow
+    debugger: allow
+    refactorer: allow
   skill:
     brainstorming: allow
     agent-delegation: allow
@@ -90,7 +92,9 @@ After plan approval:
       - security-reviewer: security review of diffs
       - code-reviewer: cumulative diff review
       - docs-reviewer: docs update check
-      - spec-critic: plan critique
+      - spec-critic: plan or code or architecture critique
+      - debugger: root-cause analysis of failures (Four-Phase). Never writes code. Use before a third fix attempt.
+      - refactorer: removes dead code, reduces complexity, consolidates duplicates. Never adds features. Use for dedicated cleanup slices.
 
       ## Instructions
       Decide the single next action. Return structured decision.
