@@ -29,10 +29,11 @@ Review the changed files and diff for:
 - opportunities to simplify
 
 Return exactly:
-1. Blocking issues
-2. Non-blocking improvements
-3. Simplifications
-4. Final review verdict
+1. What works well (required — acknowledge strengths before problems)
+2. Blocking issues
+3. Non-blocking improvements
+4. Simplifications
+5. Final review verdict
 
 Do not rewrite code.
-Do not give generic praise.
+Do not give generic praise — "what works well" must cite specific decisions, patterns, or choices that are genuinely good.

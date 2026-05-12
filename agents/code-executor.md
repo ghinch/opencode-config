@@ -17,6 +17,7 @@ permission:
   task:
     api-docs-researcher: allow
     test-verifier: allow
+    debugger: allow
   skill:
     "gitnexus-*": allow
     pythonic-quality: allow
@@ -40,9 +41,11 @@ Fulfill exactly the delegated slice:
 - Run verification commands (tests, lint, typecheck) directly via bash. Optionally delegate a broader verification pass to `test-verifier` after implementation is complete.
 - Produce clear evidence (command output references) proving slice acceptance criteria.
 
+**Three-Fail Rule**: if the same test or build failure recurs after two focused fix attempts, stop trying variations. Delegate to `debugger` for root-cause analysis, then apply the recommended fix. Do not keep guessing — repeated blind retries waste tokens and may make the problem harder to trace.
+
 Forbidden **during this delegation**:
 
-- **No broad Task delegation** — you may only delegate via **Task** to `api-docs-researcher` (for external SDK/API facts you cannot resolve from local files) and `test-verifier` (for a broader post-implementation verification pass). All other subagents are denied. Read files and run verification commands yourself using your bash and file tools.
+- **No broad Task delegation** — you may only delegate via **Task** to `api-docs-researcher` (for external SDK/API facts you cannot resolve from local files), `test-verifier` (for a broader post-implementation verification pass), and `debugger` (for root-cause analysis when a test failure cannot be understood after two focused investigations). All other subagents are denied. Read files and run verification commands yourself using your bash and file tools.
 - Repo-wide **`code-reviewer`** / **`docs-reviewer`** / **`security-reviewer`** phases — orchestrator schedules those after slices converge.
 - **Treating code supplied in the delegating prompt as the implementation.** The orchestrator passes requirements and acceptance criteria only. Any code snippets in the prompt are illustrative context at most — you write all production code and tests yourself from scratch.
 

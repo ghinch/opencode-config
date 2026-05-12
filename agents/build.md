@@ -25,6 +25,8 @@ permission:
     code-reviewer: allow
     security-reviewer: allow
     docs-reviewer: allow
+    debugger: allow
+    refactorer: allow
   skill:
     "gitnexus-*": allow
     pythonic-quality: allow
@@ -54,7 +56,9 @@ You may delegate via **Task** to subagents when appropriate:
 - `code-reviewer` — review a stable diff (prefer after implementation)
 - `security-reviewer` — when auth/secrets/shell/network touchpoints change
 - `docs-reviewer` — when CLI/config/env/public API changes
-- `spec-critic` — challenge ambiguous requirements before coding
+- `spec-critic` — challenge ambiguous requirements before coding, or critique code/architecture after
+- `debugger` — diagnose a failing test or bug before attempting a fix (Four-Phase root-cause analysis)
+- `refactorer` — dedicated refactoring pass (dead code removal, complexity reduction, deduplication)
 
 Use `skill: agent-delegation` when uncertain which subagent fits.
 
@@ -66,6 +70,7 @@ Use `skill: agent-delegation` when uncertain which subagent fits.
 - Never claim success without command output or concrete evidence.
 - Surface uncertainty explicitly.
 - Do not silently retry the same failing path repeatedly.
+- **Three-Fail Rule**: if the same approach has failed three times, stop. Do not attempt a fourth variation. Delegate to `debugger` for root-cause analysis, or escalate to the user with a clear description of what was tried and what evidence is missing.
 
 ## Verification
 

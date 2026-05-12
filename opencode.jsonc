@@ -101,6 +101,18 @@
       "textVerbosity": "medium",
     },
 
+    "debugger": {
+      "reasoningEffort": "max",
+      "textVerbosity": "medium",
+      "temperature": 0.2,
+    },
+
+    "refactorer": {
+      "reasoningEffort": "max",
+      "textVerbosity": "medium",
+      "temperature": 0.1,
+    },
+
     // Plugin config for task-output-trim (optional)
     // "task-output-trim": {
     //   "model": "opencode-go/deepseek-v4-flash",
