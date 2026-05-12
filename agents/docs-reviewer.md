@@ -9,9 +9,6 @@ permission:
   edit: deny
   bash:
     "pwd": allow
-    "ls *": allow
-    "find *": allow
-    "cat *": allow
     "rg *": allow
   webfetch: deny
   websearch: deny

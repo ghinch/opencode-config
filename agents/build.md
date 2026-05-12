@@ -10,11 +10,6 @@ permission:
     "git add *": allow
     "git commit *": allow
     "pwd": allow
-    "ls *": allow
-    "find *": allow
-    "cat *": allow
-    "head *": allow
-    "tail *": allow
     "sed *": allow
     "awk *": allow
     "rg *": allow

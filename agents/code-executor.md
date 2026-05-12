@@ -8,11 +8,6 @@ permission:
   doom_loop: deny
   bash:
     "pwd": allow
-    "ls *": allow
-    "find *": allow
-    "cat *": allow
-    "head *": allow
-    "tail *": allow
     "sed *": allow
     "awk *": allow
     "rg *": allow
