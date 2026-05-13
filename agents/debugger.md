@@ -11,9 +11,6 @@ permission:
     "pwd": allow
     "ls *": allow
     "rg *": allow
-    "git log *": allow
-    "git blame *": allow
-    "git diff *": allow
     "git bisect *": allow
   webfetch: deny
   websearch: deny

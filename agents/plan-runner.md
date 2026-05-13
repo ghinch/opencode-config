@@ -12,14 +12,10 @@ permission:
   external_directory: deny
   doom_loop: deny
   bash:
-    "*": deny
     "pwd": allow
     "sed *": allow
     "awk *": allow
     "rg *": allow
-    "rm *": deny
-    "mv *": deny
-    "cp *": deny
   task:
     explore: allow
     spec-critic: allow

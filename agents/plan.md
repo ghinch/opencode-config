@@ -11,7 +11,6 @@ permission:
   external_directory: ask
   doom_loop: ask
   bash:
-    "*": ask
     "pwd": allow
     "ls *": allow
     "find *": allow

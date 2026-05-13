@@ -12,10 +12,6 @@ permission:
     "sed *": allow
     "awk *": allow
     "rg *": allow
-
-    "rm *": deny
-    "mv *": deny
-    "cp *": deny
     
   webfetch: deny
   websearch: deny

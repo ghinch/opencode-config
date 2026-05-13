@@ -6,9 +6,6 @@ permission:
   external_directory: ask
   doom_loop: ask
   bash:
-    "*": ask
-    "git add *": allow
-    "git commit *": allow
     "pwd": allow
     "sed *": allow
     "awk *": allow
