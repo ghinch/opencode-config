@@ -138,11 +138,16 @@
       "git add *": "allow",
       "git commit *": "allow",
       "git stash *": "allow",
-
       // ── Same write commands via git -C ──────────────────────────
       "git -C * add *": "allow",
       "git -C * commit *": "allow",
       "git -C * stash *": "allow",
+
+      // ── Deny git add -A ───────────────────────────────────────── 
+      "git add * -A *": "deny",
+      "git add * --all *": "deny",
+      "git -C add * -A *": "deny",
+      "git -C add * --all *": "deny",
 
       // ── Potentially destructive — always ask ────────────────────
       "git checkout *": "ask",
