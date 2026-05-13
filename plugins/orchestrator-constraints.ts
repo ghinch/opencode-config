@@ -21,6 +21,27 @@ function isAllowedReadPath(pattern: string | string[] | undefined): boolean {
 
 const BLOCKED_TOOLS = new Set(["grep", "glob", "bash", "edit", "write"]);
 
+// ── Per-task cycle state machine ──────────────────────────────────
+
+type CycleState = "idle" | "exec_dispatched" | "review_dispatched";
+
+const CODE_EXEC_AGENTS = new Set(["code-executor", "refactorer"]);
+const REVIEW_AGENTS = new Set(["code-reviewer", "security-reviewer"]);
+
+const cycleStateCache = new Map<
+  string,
+  { state: CycleState; ts: number }
+>();
+
+const ESCALATION_MESSAGE =
+  "[orchestrator-constraints] Cycle guard: last dispatch was code-executor or refactorer; " +
+  "code-reviewer + warden sign-off not detected.\n" +
+  "You MUST dispatch code-reviewer on the last changes, then send the review output to " +
+  "warden for pass/fail decision.\n" +
+  "Do NOT dispatch another code-executor until warden signs off and changes are committed.\n" +
+  "If this is an exploration-only task, dispatch code-reviewer with scope " +
+  '"exploration task — no code changes" so it can confirm nothing to review.';
+
 // ── Routing agent detection (cached per session, 30s TTL) ─────────
 
 const sessionAgentCache = new Map<string, { agent: string | null; ts: number }>();
@@ -105,6 +126,7 @@ const OrchestratorConstraintsPlugin: Plugin = async ({ client, directory }) => {
     },
 
     // Safety net: block tool calls that somehow bypass permission.ask
+    // Also: per-task cycle guard — prevents code-executor dispatch before review
     "tool.execute.before": async (input, _output) => {
       const routingAgent = await getRoutingAgent(
         client,
@@ -119,7 +141,47 @@ const OrchestratorConstraintsPlugin: Plugin = async ({ client, directory }) => {
           `Delegate this work to a subagent via Task.`,
         );
       }
+
+      // Per-task cycle guard: prevent skipping review between code-executor dispatches
+      if (input.tool === "task") {
+        const subagentType = (input as Record<string, unknown>).subagent_type as string | undefined;
+        if (subagentType && CODE_EXEC_AGENTS.has(subagentType)) {
+          const cached = cycleStateCache.get(input.sessionID);
+          if (cached && cached.state === "exec_dispatched") {
+            throw new Error(ESCALATION_MESSAGE);
+          }
+        }
+      }
+
       // Note: read is NOT blocked here — permission.ask handles path-aware gating.
+    },
+
+    // Per-task cycle tracking: update state after Task dispatches and git commits
+    "tool.execute.after": async (input, _output) => {
+      const routingAgent = await getRoutingAgent(
+        client,
+        input.sessionID,
+        directory,
+      );
+      if (routingAgent !== "orchestrator") return;
+
+      // Track Task dispatches to advance cycle state
+      if (input.tool === "task") {
+        const subagentType = (input as Record<string, unknown>).subagent_type as string | undefined;
+        if (subagentType && CODE_EXEC_AGENTS.has(subagentType)) {
+          cycleStateCache.set(input.sessionID, { state: "exec_dispatched", ts: Date.now() });
+        } else if (subagentType && REVIEW_AGENTS.has(subagentType)) {
+          cycleStateCache.set(input.sessionID, { state: "review_dispatched", ts: Date.now() });
+        }
+      }
+
+      // Detect git commit to reset cycle state
+      if (input.tool === "bash") {
+        const command = (input as Record<string, unknown>).command as string | undefined;
+        if (typeof command === "string" && command.includes("git commit")) {
+          cycleStateCache.set(input.sessionID, { state: "idle", ts: Date.now() });
+        }
+      }
     },
 
     // Clear cache on session lifecycle events
@@ -130,6 +192,7 @@ const OrchestratorConstraintsPlugin: Plugin = async ({ client, directory }) => {
         event.properties?.sessionID
       ) {
         sessionAgentCache.delete(event.properties.sessionID);
+        cycleStateCache.delete(event.properties.sessionID);
       }
     },
   };

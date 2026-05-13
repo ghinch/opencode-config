@@ -14,6 +14,8 @@ permission:
     "rm *": allow
     "mv *": allow
     "cp *": allow
+    "git add *": allow
+    "git commit *": allow
   task:
     api-docs-researcher: allow
     test-verifier: allow
@@ -40,6 +42,8 @@ Fulfill exactly the delegated slice:
 - Read files directly using your file tools (Read, Glob, Grep) when you need full contents or precise signatures. Do not assume the slice prompt contains everything.
 - Run verification commands (tests, lint, typecheck) directly via bash. Optionally delegate a broader verification pass to `test-verifier` after implementation is complete.
 - Produce clear evidence (command output references) proving slice acceptance criteria.
+
+**Committing after review approval**: The orchestrator may dispatch you after a task passes review to commit changes. You will receive an exact commit message from the warden. Run `git add -A` then `git commit -m '...'`. Never push — only commit locally.
 
 **Three-Fail Rule**: if the same test or build failure recurs after two focused fix attempts, stop trying variations. Delegate to `debugger` for root-cause analysis, then apply the recommended fix. Do not keep guessing — repeated blind retries waste tokens and may make the problem harder to trace.
 
