@@ -34,7 +34,6 @@ services:
   # ── Agent Vault: credential proxy server ──
   agent-vault:
     image: docker.io/infisical/agent-vault:0.20.1
-    container_name: agent-vault
     networks:
       - internal
     ports:
@@ -50,7 +49,6 @@ services:
   # ── Token Refresher: OAuth access token lifecycle ──
   token-refresher:
     image: docker.io/infisical/agent-vault:0.20.1
-    container_name: token-refresher
     user: root
     networks:
       - internal
@@ -86,7 +84,6 @@ services:
       context: .
       dockerfile: Dockerfile.opencode
     image: opencode-sandbox:latest
-    container_name: opencode-server
     networks:
       - internal
     ports:

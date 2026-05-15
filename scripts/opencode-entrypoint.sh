@@ -25,7 +25,7 @@ else
   echo "  container run --rm \\"
   echo "    --volume ~/.local/share/opencode/auth.json:/tmp/auth.json:ro \\"
   echo "    --volume ~/.config/opencode/agent-token:/token \\"
-  echo "    --network opencode-sandbox_internal \\"
+  echo "    --network internal \\"
   echo "    -e AGENT_VAULT_ADDR=http://agent-vault:14321 \\"
   echo "    -e AGENT_VAULT_EMAIL=<email> \\"
   echo "    -e AGENT_VAULT_PASSWORD=<password> \\"

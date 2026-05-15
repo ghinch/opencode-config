@@ -6,7 +6,7 @@
 #   container run --rm \
 #     --volume ~/.local/share/opencode/auth.json:/tmp/auth.json:ro \
 #     --volume ~/.config/opencode/agent-token:/token \
-#     --network opencode-sandbox_internal \
+#     --network internal \
 #     -e AGENT_VAULT_ADDR=http://agent-vault:14321 \
 #     -e AGENT_VAULT_EMAIL=<email> \
 #     -e AGENT_VAULT_PASSWORD=<password> \
