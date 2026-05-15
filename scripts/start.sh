@@ -9,11 +9,9 @@
 #   4. container network create internal (run once)
 #
 # Usage:
-#   source .env
 #   ./scripts/start.sh [service...]
 #
 #   ./scripts/start.sh              # start all
-#   ./scripts/start.sh agent-vault  # start just agent-vault
 
 set -euo pipefail
 
@@ -26,6 +24,23 @@ NETWORK="internal"
 # ── helpers ──
 log()  { echo "[start] $*" >&2; }
 die()  { log "FATAL: $*"; exit 1; }
+
+# ── load .env ──
+ENV_FILE="${PROJECT_DIR}/.env"
+if [ -f "${ENV_FILE}" ]; then
+  set -o allexport
+  source "${ENV_FILE}"
+  set +o allexport
+else
+  log "WARNING: ${ENV_FILE} not found — copy .env.example to .env and edit"
+fi
+
+# Strip stray whitespace/newlines from critical vars
+for var in AGENT_VAULT_MASTER_PASSWORD AGENT_VAULT_EMAIL AGENT_VAULT_PASSWORD OPENCODE_SERVER_PASSWORD AGENT_VAULT_VAULT; do
+  if [ -n "${!var:-}" ]; then
+    printf -v "$var" '%s' "${!var}"
+  fi
+done
 
 # ── check prerequisites ──
 command -v container >/dev/null 2>&1 || die "container CLI not found — install Apple Container"
