@@ -51,11 +51,8 @@ services:
       # Persistent storage for the SQLite database, CA certs, etc.
       - agent-vault-data:/data
     environment:
-      # Master password used to encrypt the data encryption key.
-      # Never commit to git — pass via .env or env var.
-      - AGENT_VAULT_MASTER_PASSWORD=${AGENT_VAULT_MASTER_PASSWORD:-}
-      # Data directory within the container
-      - AGENT_VAULT_DATA_DIR=/data
+      AGENT_VAULT_MASTER_PASSWORD: ${AGENT_VAULT_MASTER_PASSWORD:-}
+      AGENT_VAULT_DATA_DIR: /data
 
   # ── Token Refresher: OAuth access token lifecycle ──
   # Periodically reads OAuth refresh tokens from agent-vault, calls
@@ -102,12 +99,12 @@ services:
       # Mount the refresh script
       - ./scripts/refresh-oauth-tokens.sh:/scripts/refresh-oauth-tokens.sh:ro
     environment:
-      - AGENT_VAULT_ADDR=http://agent-vault:14321
-      - AGENT_VAULT_VAULT=${AGENT_VAULT_VAULT:-default}
-      - AGENT_VAULT_EMAIL=${AGENT_VAULT_EMAIL:-}
-      - AGENT_VAULT_PASSWORD=${AGENT_VAULT_PASSWORD:-}
+      AGENT_VAULT_ADDR: http://agent-vault:14321
+      AGENT_VAULT_VAULT: ${AGENT_VAULT_VAULT:-default}
+      AGENT_VAULT_EMAIL: ${AGENT_VAULT_EMAIL:-}
+      AGENT_VAULT_PASSWORD: ${AGENT_VAULT_PASSWORD:-}
       # Override default OAuth endpoints if needed:
-      # - OAUTH_PROVIDERS=<JSON array of provider configs>
+      # OAUTH_PROVIDERS: <JSON array of provider configs>
     depends_on:
       - agent-vault
 
@@ -149,14 +146,14 @@ services:
       # Agent Vault connection — API address on container network.
       # The `agent-vault run` wrapper discovers the proxy port (14322)
       # from the server and sets up HTTPS_PROXY automatically.
-      - AGENT_VAULT_ADDR=http://agent-vault:14321
+      AGENT_VAULT_ADDR: http://agent-vault:14321
       # Token file path (read by entrypoint script)
-      - AGENT_VAULT_TOKEN_FILE=/token/agent-token
-      - AGENT_VAULT_TOKEN=${AGENT_VAULT_TOKEN:-}
-      - AGENT_VAULT_VAULT=${AGENT_VAULT_VAULT:-default}
+      AGENT_VAULT_TOKEN_FILE: /token/agent-token
+      AGENT_VAULT_TOKEN: ${AGENT_VAULT_TOKEN:-}
+      AGENT_VAULT_VAULT: ${AGENT_VAULT_VAULT:-default}
 
-      # -- Basic auth for the opencode HTTP API --
-      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+      # Basic auth for the opencode HTTP API
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:-}
 
       # === ALL credentials are dummies ===
       # Agent-vault intercepts outbound requests and replaces these
@@ -167,10 +164,10 @@ services:
       #   github-copilot      → static access token in vault (never expires)
       #   openai              → live access token in vault (refreshed by token-refresher)
       #   anthropic           → static API key (if configured)
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-__gemini_api_key__}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-__openai_api_key__}
-      - GITHUB_TOKEN=${GITHUB_TOKEN:-__github_token__}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-__anthropic_api_key__}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-__gemini_api_key__}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-__openai_api_key__}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-__github_token__}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-__anthropic_api_key__}
     working_dir: /workspace
     command: /usr/local/bin/opencode-entrypoint.sh
     depends_on:
