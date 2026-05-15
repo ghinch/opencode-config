@@ -1,0 +1,179 @@
+version: "3.8"
+name: opencode-sandbox
+
+# -- Apple Container / container-compose orchestration --
+# Replaces Docker Compose. Uses Apple Container (apple/container)
+# as the container runtime + container-compose for orchestration.
+#
+# Key differences from Docker Compose:
+#   - Images need docker.io/ prefix (e.g. docker.io/library/node:22-slim)
+#   - No restart policies (unsupported by container-compose)
+#   - No healthchecks (parsed but not wired)
+#   - No `container-compose run` — bootstrap is a manual `container run --rm`
+#
+# Usage:
+#   container system start
+#   container-compose build
+#   container-compose up -d agent-vault
+#   # then run the bootstrap manually (see .env.example)
+#   container-compose up -d
+
+networks:
+  internal:
+    # Apple Container vmnet network — containers resolve each other
+    # by service name (agent-vault, token-refresher, opencode-server).
+
+volumes:
+  # Persistent storage for the agent-vault SQLite database, CA certs, etc.
+  agent-vault-data:
+  # Persistent opencode sessions and state across container restarts
+  opencode-home:
+
+services:
+  # ── Agent Vault: credential proxy server ──
+  # Stores your secrets (API keys, tokens) and injects them into
+  # outbound requests from the opencode server. OpenCode never
+  # sees real credentials — only dummy placeholders.
+  agent-vault:
+    image: docker.io/infisical/agent-vault:0.20.1
+    container_name: agent-vault
+    networks:
+      - internal
+    ports:
+      # Management UI/API — exposed to host so you can configure
+      # vaults, credentials, and agent tokens via the web UI at
+      # http://localhost:14321
+      - "14321:14321"
+      # MITM proxy port — internal only. The opencode container
+      # routes all outbound HTTPS through this port.
+      - "14322:14322"
+    volumes:
+      # Persistent storage for the SQLite database, CA certs, etc.
+      - agent-vault-data:/data
+    environment:
+      # Master password used to encrypt the data encryption key.
+      # Never commit to git — pass via .env or env var.
+      - AGENT_VAULT_MASTER_PASSWORD=${AGENT_VAULT_MASTER_PASSWORD:-}
+      # Data directory within the container
+      - AGENT_VAULT_DATA_DIR=/data
+
+  # ── Token Refresher: OAuth access token lifecycle ──
+  # Periodically reads OAuth refresh tokens from agent-vault, calls
+  # each provider's token endpoint to get fresh access tokens, and
+  # pushes them back to agent-vault.
+  #
+  # Uses admin login (email + password) because reading/writing
+  # credential values requires member+ vault role — the agent token
+  # created by bootstrap is proxy role (inject-only).
+  #
+  # The opencode server only sees dummy placeholders — agent-vault
+  # injects the LIVE access token at proxy time.
+  #
+  # NOTE: container-compose does not support restart policies.
+  # If this container crashes, it stays down. Monitor with
+  # `container stats` and restart manually if needed, or use
+  # the host-side launchd job alternative (see plan).
+  token-refresher:
+    image: docker.io/infisical/agent-vault:0.20.1
+    container_name: token-refresher
+    # Override non-root user — needed for apk add jq curl
+    user: root
+    networks:
+      - internal
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      apk add --no-cache jq curl >&2
+
+      # Login with admin credentials (required for credential read/write)
+      echo "${AGENT_VAULT_PASSWORD}" | agent-vault auth login \
+        --address "${AGENT_VAULT_ADDR}" \
+        --email "${AGENT_VAULT_EMAIL}" \
+        --password-stdin || {
+        echo "[refresher] FATAL: admin login failed" >&2
+        exit 1
+      }
+
+      echo "[refresher] starting OAuth token refresh loop (every 15 min)..."
+      while true; do
+        /scripts/refresh-oauth-tokens.sh || echo "[refresher] refresh cycle had errors — will retry" >&2
+        sleep 900
+      done
+    volumes:
+      # Mount the refresh script
+      - ./scripts/refresh-oauth-tokens.sh:/scripts/refresh-oauth-tokens.sh:ro
+    environment:
+      - AGENT_VAULT_ADDR=http://agent-vault:14321
+      - AGENT_VAULT_VAULT=${AGENT_VAULT_VAULT:-default}
+      - AGENT_VAULT_EMAIL=${AGENT_VAULT_EMAIL:-}
+      - AGENT_VAULT_PASSWORD=${AGENT_VAULT_PASSWORD:-}
+      # Override default OAuth endpoints if needed:
+      # - OAUTH_PROVIDERS=<JSON array of provider configs>
+    depends_on:
+      - agent-vault
+
+  # ── OpenCode: headless API server ──
+  # Runs `opencode serve` behind the agent-vault proxy. All outbound
+  # LLM API calls have credentials injected by agent-vault.
+  #
+  # The server has ZERO access to real credentials:
+  #   - auth.json is NOT mounted
+  #   - All env vars are dummies (__gemini_api_key__, etc.)
+  #   - Agent-vault replaces dummies with real keys/tokens at proxy time
+  #
+  # Connect from your host with:
+  #   opencode attach http://localhost:4096
+  opencode:
+    build:
+      context: .
+      dockerfile: Dockerfile.opencode
+    image: opencode-sandbox:latest
+    container_name: opencode-server
+    networks:
+      - internal
+    ports:
+      # OpenCode HTTP API — connect your TUI, IDE plugin, or SDK client
+      # Only listen on localhost to prevent external access
+      - "127.0.0.1:4096:4096"
+    volumes:
+      # Mount the entire repo so opencode can read/write project files
+      - .:/workspace
+      # Share your host opencode config (agents, commands, provider
+      # settings, etc.) with the container
+      - ${HOME}/.config/opencode:/home/opencode/.config/opencode:ro
+      # Persist opencode sessions and state across restarts
+      - opencode-home:/home/opencode
+      # Agent token — written by bootstrap, read by entrypoint
+      # Bootstrap writes to ~/.config/opencode/agent-token on the host
+      - ${HOME}/.config/opencode/agent-token:/token:ro
+    environment:
+      # Agent Vault connection — API address on container network.
+      # The `agent-vault run` wrapper discovers the proxy port (14322)
+      # from the server and sets up HTTPS_PROXY automatically.
+      - AGENT_VAULT_ADDR=http://agent-vault:14321
+      # Token file path (read by entrypoint script)
+      - AGENT_VAULT_TOKEN_FILE=/token/agent-token
+      - AGENT_VAULT_TOKEN=${AGENT_VAULT_TOKEN:-}
+      - AGENT_VAULT_VAULT=${AGENT_VAULT_VAULT:-default}
+
+      # -- Basic auth for the opencode HTTP API --
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+
+      # === ALL credentials are dummies ===
+      # Agent-vault intercepts outbound requests and replaces these
+      # placeholder values with the real credentials from the vault.
+      #
+      # How each credential is managed:
+      #   google, opencode-go → static API key in vault (never changes)
+      #   github-copilot      → static access token in vault (never expires)
+      #   openai              → live access token in vault (refreshed by token-refresher)
+      #   anthropic           → static API key (if configured)
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-__gemini_api_key__}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-__openai_api_key__}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-__github_token__}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-__anthropic_api_key__}
+    working_dir: /workspace
+    command: /usr/local/bin/opencode-entrypoint.sh
+    depends_on:
+      - agent-vault
+    stdin_open: true
+    tty: true

@@ -1,0 +1,27 @@
+# -- Bootstrap: one-shot agent-vault credential setup --
+# Reads opencode's auth.json, registers admin account in agent-vault,
+# creates credentials + service rules, mints an agent token.
+#
+# Run manually (no container-compose run equivalent):
+#   container run --rm \
+#     --volume ~/.local/share/opencode/auth.json:/tmp/auth.json:ro \
+#     --volume ~/.config/opencode/agent-token:/token \
+#     --network opencode-sandbox_internal \
+#     -e AGENT_VAULT_ADDR=http://agent-vault:14321 \
+#     -e AGENT_VAULT_EMAIL=<email> \
+#     -e AGENT_VAULT_PASSWORD=<password> \
+#     agent-vault-bootstrap:latest
+
+FROM docker.io/library/alpine:latest
+
+# Install runtime deps for the bootstrap script
+RUN apk add --no-cache jq curl
+
+# Copy the agent-vault CLI from the official image
+COPY --from=docker.io/infisical/agent-vault:0.20.1 /usr/local/bin/agent-vault /usr/local/bin/agent-vault
+
+# Copy the bootstrap script
+COPY scripts/bootstrap-agent-vault.sh /usr/local/bin/bootstrap-agent-vault.sh
+RUN chmod +x /usr/local/bin/bootstrap-agent-vault.sh
+
+ENTRYPOINT ["/usr/local/bin/bootstrap-agent-vault.sh"]

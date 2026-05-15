@@ -1,0 +1,36 @@
+# -- Runtime: opencode server + agent-vault proxy CLI --
+# Runs `opencode serve` behind the agent-vault proxy so all outbound
+# LLM API calls (Anthropic, OpenAI, etc.) have credentials injected
+# by agent-vault. The opencode server exposes an HTTP API on port 4096
+# that you connect to from your host with `opencode attach`.
+FROM docker.io/library/node:22-slim
+
+# Install system deps for agent-vault proxy CA trust and git for opencode tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates git curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install opencode (current maintained version from anomalyco/opencode)
+RUN npm install -g opencode-ai@latest
+
+# Copy the agent-vault CLI from the official image
+COPY --from=docker.io/infisical/agent-vault:0.20.1 /usr/local/bin/agent-vault /usr/local/bin/agent-vault
+
+# Create a non-root user for running the server
+RUN useradd -m -s /bin/bash opencode \
+    && mkdir -p /home/opencode/.config/opencode \
+    && chown -R opencode:opencode /home/opencode
+
+# Entrypoint script — reads AGENT_VAULT_TOKEN from shared volume,
+# then launches `opencode serve` proxied through agent-vault.
+COPY scripts/opencode-entrypoint.sh /usr/local/bin/opencode-entrypoint.sh
+RUN chmod +x /usr/local/bin/opencode-entrypoint.sh
+
+USER opencode
+WORKDIR /workspace
+
+# Expose the opencode server port (connect from host with:
+#   opencode attach http://localhost:4096)
+EXPOSE 4096
+
+ENTRYPOINT ["/usr/local/bin/opencode-entrypoint.sh"]
