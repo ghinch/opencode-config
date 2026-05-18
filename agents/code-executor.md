@@ -11,8 +11,8 @@ permission:
     "sed *": allow
     "awk *": allow
     "rg *": allow
-    "rm *": allow
-    "mv *": allow
+    "rm *": ask 
+    "mv *": ask 
     "cp *": allow
     "git add *": allow
     "git commit *": allow

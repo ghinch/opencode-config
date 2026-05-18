@@ -2,22 +2,22 @@
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": true,
   "plugin": [
-      "cc-safety-net",
-      "envsitter-guard@latest",
-      "@mohak34/opencode-notifier@latest",
-      "opencode-history-search"
+      "cc-safety-net@v0.9.0",
+      "envsitter-guard@17e37f2f76ea2c3fcc793a9082e06ab01f6f2e82",
+      "@mohak34/opencode-notifier@v0.2.5",
+      "opencode-history-search@v1.4.1"
   ],
 
   // ── Top tier (DeepSeek V4 Pro) ────────────────────────────────────
   "agent": {
     "build": {
       "model": "opencode-go/deepseek-v4-pro",
-      "variant": "max",
+      "variant": "medium",
       "textVerbosity": "medium"
     },
     "plan": {
       "model": "opencode-go/deepseek-v4-pro",
-      "variant": "max",
+      "variant": "medium",
       "textVerbosity": "medium"
     },
     "orchestrator": {
@@ -31,18 +31,18 @@
     // ── Warden (strategic decision maker) ─────────────────────────
     "warden": {
       "model": "opencode-go/deepseek-v4-pro",
-      "variant": "max",
+      "variant": "high",
       "textVerbosity": "medium",
       "temperature": 0.2
     },
     "security-reviewer": {
       "model": "opencode-go/deepseek-v4-pro",
-      "variant": "max",
+      "variant": "high",
       "textVerbosity": "medium"
     },
     "debugger": {
       "model": "opencode-go/deepseek-v4-pro",
-      "variant": "max",
+      "variant": "high",
       "textVerbosity": "medium",
       "temperature": 0.2
     },
@@ -50,7 +50,7 @@
     // ── Flash tier (DeepSeek V4 Flash — all other agents) ─────────
     "code-executor": {
       "model": "opencode-go/deepseek-v4-flash",
-      "variant": "max",
+      "variant": "high",
       "textVerbosity": "medium"
     },
     "refactorer": {
@@ -61,17 +61,17 @@
     },
     "code-reviewer": {
       "model": "opencode-go/deepseek-v4-flash",
-      "variant": "max",
+      "variant": "high",
       "textVerbosity": "medium"
     },
     "spec-critic": {
       "model": "opencode-go/deepseek-v4-flash",
-      "variant": "max",
+      "variant": "high",
       "textVerbosity": "medium"
     },
     "plan-runner": {
-      "model": "opencode-go/deepseek-v4-flash",
-      "variant": "max",
+      "model": "opencode-go/deepseek-v4-pro",
+      "variant": "medium",
       "textVerbosity": "medium"
     },
     "api-docs-researcher": {
