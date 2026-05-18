@@ -50,6 +50,7 @@ For **`orchestrator`**, delegation is a permission boundary, not just a workflow
 - Never push without explicit user intent.
 - Never create destructive history edits without explicit need.
 - Prefer showing the diff before commit-level actions.
+- Never add all files when committing (eg. -A, --all). Always add the specific files required for the change.
 
 ## Response style
 
